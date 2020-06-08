@@ -7,6 +7,10 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -30,16 +34,23 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class ImageFragment extends Fragment {
+public class ImageFragment extends Fragment implements OnItemSelectedListener {
 
   private WebView contentView;
   private MainViewModel viewModel;
+
+  private Spinner spinner;
+  private List<Animal> animals;
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
       Bundle savedInstanceState) {
     View root = inflater.inflate(R.layout.fragment_image, container, false);
     setupWebView(root);
+
+    spinner = root.findViewById(R.id.animals_spinner);
+    spinner.setOnItemSelectedListener(this);
+
     return root;
   }
 
@@ -52,7 +63,13 @@ public class ImageFragment extends Fragment {
     viewModel.getAnimals().observe(getViewLifecycleOwner(), new Observer<List<Animal>>() {
       @Override
       public void onChanged(List<Animal> animals) {
-        contentView.loadUrl(animals.get(49).getUrl());
+        ImageFragment.this.animals = animals;
+        ArrayAdapter<Animal> adapter = new ArrayAdapter<>(
+            ImageFragment.this.getContext(), R.layout.custom_spinner_item, animals
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
       }
     });
   }
@@ -74,5 +91,14 @@ public class ImageFragment extends Fragment {
     settings.setLoadWithOverviewMode(true);
   }
 
+  @Override
+  public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+    contentView.loadUrl(animals.get(position).getUrl());
+  }
+
+  @Override
+  public void onNothingSelected(AdapterView<?> parent) {
+
+  }
 }
 
