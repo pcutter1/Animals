@@ -10,6 +10,7 @@ import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,6 +24,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.squareup.picasso.Picasso;
 import edu.cnm.deepdive.animals.BuildConfig;
 import edu.cnm.deepdive.animals.R;
 import edu.cnm.deepdive.animals.model.Animal;
@@ -37,19 +39,20 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ImageFragment extends Fragment implements OnItemSelectedListener {
 
-  private WebView contentView;
+  private ImageView imageView;
   private MainViewModel viewModel;
 
   private Toolbar toolbar;
 
   private Spinner spinner;
   private List<Animal> animals;
+  private int selectedAnimal = -1;
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
       Bundle savedInstanceState) {
     View root = inflater.inflate(R.layout.fragment_image, container, false);
-    setupWebView(root);
+    imageView = root.findViewById(R.id.image_view);
 
     toolbar = root.findViewById(R.id.toolbar);
     toolbar.setTitle(R.string.app_name);
@@ -67,35 +70,36 @@ public class ImageFragment extends Fragment implements OnItemSelectedListener {
     viewModel = new ViewModelProvider(getActivity())
         .get(MainViewModel.class);
     viewModel.getAnimals().observe(getViewLifecycleOwner(), (animals) -> {
-        ImageFragment.this.animals = animals;
         ArrayAdapter<Animal> adapter = new ArrayAdapter<>(
             ImageFragment.this.getContext(), R.layout.custom_spinner_item, animals
         );
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        this.animals = animals;
+        if(selectedAnimal >= 0) {
+          udpateSelection();
+        }
       });
+    viewModel.getSelectedItem().observe(getViewLifecycleOwner(), (item) -> {
+
+      if(item != selectedAnimal) {
+        selectedAnimal = item;
+        if(animals != null) {
+          udpateSelection();
+        }
+      }
+
+    });
   }
 
-  private void setupWebView(View root) {
-    contentView = root.findViewById(R.id.content_view);
-    contentView.setWebViewClient(new WebViewClient() {
-      @Override
-      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-        return false;
-      }
-    });
-    WebSettings settings = contentView.getSettings();
-    settings.setJavaScriptEnabled(true);
-    settings.setSupportZoom(true);
-    settings.setBuiltInZoomControls(true);
-    settings.setDisplayZoomControls(false);
-    settings.setUseWideViewPort(true);
-    settings.setLoadWithOverviewMode(true);
+  private void udpateSelection() {
+    spinner.setSelection(selectedAnimal);
+    Picasso.get().load(animals.get(selectedAnimal).getUrl()).into(imageView);
   }
 
   @Override
   public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-    contentView.loadUrl(animals.get(position).getUrl());
+    viewModel.select(position);
   }
 
   @Override

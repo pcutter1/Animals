@@ -24,6 +24,7 @@ public class MainViewModel extends AndroidViewModel {
 
   private MutableLiveData<List<Animal>> animals;
   private MutableLiveData<Throwable> throwable;
+  private MutableLiveData<Integer> selectedItem;
   private AnimalService animalService;
 
   public MainViewModel(@NonNull Application application) {
@@ -31,6 +32,7 @@ public class MainViewModel extends AndroidViewModel {
     animalService = AnimalService.getInstance();
     animals = new MutableLiveData<>();
     throwable = new MutableLiveData<>();
+    selectedItem = new MutableLiveData<>();
     loadAnimals();
   }
 
@@ -43,11 +45,23 @@ public class MainViewModel extends AndroidViewModel {
     return throwable;
   }
 
+  public LiveData<Integer> getSelectedItem() {
+    return selectedItem;
+  }
+
+  public void select(int index) {
+    selectedItem.setValue(index);
+  }
+
   private void loadAnimals() {
 
     animalService.getAnimals(BuildConfig.CLIENT_KEY)
         .subscribeOn(Schedulers.io())
-        .subscribe((animals) -> this.animals.postValue(animals),
+        .subscribe(
+            (animals) -> {
+              this.animals.postValue(animals);
+              selectedItem.postValue(0);
+            },
             (throwable) -> this.throwable.postValue(throwable));
 
   }
